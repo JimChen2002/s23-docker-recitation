@@ -1,1 +1,9 @@
-
+version: '3.9'
+services:
+  my-fastapi-service:
+    container_name: whos-my-ta
+    image: docker-recitation-17313:latest
+    cpus: 1
+    mem_limit: 1024m
+    ports:
+      - "8080:8080"

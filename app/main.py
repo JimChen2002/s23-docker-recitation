@@ -1,45 +1,42 @@
+import pandas as pd
+import joblib
+from pydantic import BaseModel, Field
+
+# Pydantic Models
+class Student(BaseModel):
+    student_id: str = Field(alias="Student ID")
+    gender: str = Field(alias="Gender")
+    age: str = Field(alias="Age")
+    major: str = Field(alias="Major")
+    gpa: str = Field(alias="GPA")
+    extra_curricular: str = Field(alias="Extra Curricular")
+    num_programming_languages: str = Field(alias="Num Programming Languages")
+    num_past_internships: str = Field(alias="Num Past Internships")
+
+    class Config:
+        allow_population_by_field_name = True
+
+class PredictionResult(BaseModel):
+    good_employee: int
+
+
+# The Server APIs
 from fastapi import FastAPI, HTTPException
-import requests
 
 app = FastAPI()
-
 
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
-
-RECITATION_HOURS = {"a": "09:00~09:50", "b": "10:00~10:50",
-                    "c": "11:00~11:50", "d": "12:00~12:50"}
-MICROSERVICE_LINK = "https://whos-my-ta.fly.dev/section_id/"
-
-
-@app.get("/section_info/{section_id}")
-def get_section_info(section_id: str):
-
-    if section_id is None:
-        raise HTTPException(status_code=404, detail="Missing section id")
-
-    section_id = section_id.lower()
-
-    response = requests.get("https://whos-my-ta.fly.dev/section_id/" + section_id)
-
-    # You can check out what the response body looks like in terminal using the print statement
-    data = response.json()
-    print(data)
-    ta_name_list = data["ta_names"]
-    ta1_name = ta_name_list[0]["fname"] + " " + ta_name_list[0]["lname"]
-    ta2_name = ta_name_list[1]["fname"] + " " + ta_name_list[1]["lname"]
-
-    print(ta1_name)
-
-    # TODO
-    if section_id == "a":
-        return {
-            "section": "section_name",
-            "start_time": "HH:MM",
-            "end_time": "HH:MM",
-            "ta": ["taName1", "taName2"]
-        }
-    else:
-        raise HTTPException(status_code=404, detail="Invalid section id")
+@app.post("/predict")
+async def predict_student(student: Student):
+    clf = joblib.load('/code/app/model.pkl')
+    student = student.dict(by_alias=True)
+    query = pd.DataFrame(student, index=[0])
+    try:
+        prediction = clf.predict(query)
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail="Failed to predict")
+    return { 'good_employee': prediction[0].item() }
