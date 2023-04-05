@@ -27,7 +27,7 @@ app = FastAPI()
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"Chnage": "Added Continuous Deployment"}
 
 @app.post("/predict")
 async def predict_student(student: Student):
